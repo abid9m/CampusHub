@@ -1,0 +1,248 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   Int                     @id @default(autoincrement())
+  email                String                  @unique
+  password             String
+  role                 String                  @default("STUDENT")
+  name                 String
+  createdAt            DateTime                @default(now())
+  leadClubs            Club[]                  @relation("ClubLead")
+  advisedClubs         Club[]                  @relation("ClubAdvisor")
+  memberships          ClubMembership[]
+  createdEvents        Event[]                 @relation("EventCreator")
+  bookings             ResourceBooking[]
+  tickets              Ticket[]
+  certificates         Certificate[]
+  sentInvitations      CoHostInvitation[]      @relation("InvitationSender")
+  budgetApprovals      BudgetApproval[]
+  feedback             Feedback[]
+  notifications        Notification[]
+  applicationsReviewed MembershipApplication[] @relation("ApplicationReviewer")
+}
+
+model Club {
+  id              Int                     @id @default(autoincrement())
+  name            String                  @unique
+  description     String?
+  leadId          Int
+  lead            User                    @relation("ClubLead", fields: [leadId], references: [id], onDelete: Restrict)
+  advisorId       Int?
+  advisor         User?                   @relation("ClubAdvisor", fields: [advisorId], references: [id], onDelete: SetNull)
+  members         ClubMembership[]
+  events          Event[]
+  invitations     CoHostInvitation[]
+  budgetProposals BudgetProposal[]
+  applications    MembershipApplication[]
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+}
+
+model ClubMembership {
+  id       Int      @id @default(autoincrement())
+  clubId   Int
+  userId   Int
+  title    String   @default("Member")
+  joinedAt DateTime @default(now())
+  club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clubId, userId])
+  @@index([userId])
+}
+
+model Event {
+  id                Int                @id @default(autoincrement())
+  title             String
+  description       String?
+  venue             String?
+  venueKey          String?
+  startDate         DateTime
+  endDate           DateTime
+  status            String             @default("PENDING")
+  isDraft           Boolean            @default(true)
+  advisorNotes      String?
+  clubId            Int
+  club              Club               @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  creatorId         Int
+  creator           User               @relation("EventCreator", fields: [creatorId], references: [id], onDelete: Restrict)
+  tickets           Ticket[]
+  certificates      Certificate[]
+  resourceBookings  ResourceBooking[]
+  cohostInvitations CoHostInvitation[]
+  budgetProposals   BudgetProposal[]
+  feedback          Feedback[]
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([status, isDraft, startDate])
+  @@index([venueKey, startDate, endDate])
+}
+
+model Resource {
+  id          Int               @id @default(autoincrement())
+  name        String
+  type        String
+  description String?
+  isAvailable Boolean           @default(true)
+  bookings    ResourceBooking[]
+  createdAt   DateTime          @default(now())
+}
+
+model ResourceBooking {
+  id         Int      @id @default(autoincrement())
+  resourceId Int
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  userId     Int
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  eventId    Int?
+  event      Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  start      DateTime
+  end        DateTime
+  createdAt  DateTime @default(now())
+
+  @@index([resourceId, start, end])
+  @@index([userId])
+}
+
+model CoHostInvitation {
+  id          Int       @id @default(autoincrement())
+  eventId     Int
+  event       Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  clubId      Int
+  club        Club      @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  invitedById Int
+  invitedBy   User      @relation("InvitationSender", fields: [invitedById], references: [id], onDelete: Restrict)
+  status      String    @default("PENDING")
+  note        String?
+  createdAt   DateTime  @default(now())
+  respondedAt DateTime?
+
+  @@unique([eventId, clubId])
+  @@index([clubId, status])
+}
+
+model Ticket {
+  id        Int       @id @default(autoincrement())
+  code      String    @unique @default(uuid())
+  eventId   Int
+  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  scannedAt DateTime?
+
+  @@unique([eventId, userId])
+  @@index([eventId, scannedAt])
+}
+
+model Certificate {
+  id               Int      @id @default(autoincrement())
+  filePath         String
+  verificationCode String   @unique @default(uuid())
+  eventId          Int
+  event            Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId           Int
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  issuedAt         DateTime @default(now())
+
+  @@unique([eventId, userId])
+}
+
+model BudgetProposal {
+  id          Int              @id @default(autoincrement())
+  clubId      Int
+  club        Club             @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  eventId     Int?
+  event       Event?           @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  title       String
+  amount      Float
+  description String?
+  status      String           @default("PENDING")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  approvals   BudgetApproval[]
+  items       BudgetLineItem[]
+  receipts    ExpenseReceipt[]
+
+  @@index([clubId, status])
+}
+
+model BudgetLineItem {
+  id          Int            @id @default(autoincrement())
+  proposalId  Int
+  proposal    BudgetProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  description String
+  amount      Float
+}
+
+model BudgetApproval {
+  id         Int            @id @default(autoincrement())
+  proposalId Int
+  proposal   BudgetProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  advisorId  Int
+  advisor    User           @relation(fields: [advisorId], references: [id], onDelete: Restrict)
+  decision   String
+  notes      String?
+  decidedAt  DateTime       @default(now())
+}
+
+model ExpenseReceipt {
+  id          Int            @id @default(autoincrement())
+  proposalId  Int
+  proposal    BudgetProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  amount      Float
+  description String?
+  receiptUrl  String
+  createdAt   DateTime       @default(now())
+}
+
+model Feedback {
+  id        Int      @id @default(autoincrement())
+  eventId   Int
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([eventId, userId])
+}
+
+model MembershipApplication {
+  id         Int      @id @default(autoincrement())
+  clubId     Int
+  club       Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  name       String
+  email      String
+  studentId  String?
+  message    String?
+  status     String   @default("PENDING")
+  reviewerId Int?
+  reviewer   User?    @relation("ApplicationReviewer", fields: [reviewerId], references: [id], onDelete: SetNull)
+  createdAt  DateTime @default(now())
+
+  @@unique([clubId, email])
+  @@index([clubId, status])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  payload   String
+  dedupeKey String?  @unique
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, read, createdAt])
+}

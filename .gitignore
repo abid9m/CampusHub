@@ -1,0 +1,10 @@
+.env
+.env.*
+!.env.example
+node_modules/
+frontend/dist/
+storage/
+tickets/
+certificates/
+*.db
+*.log
