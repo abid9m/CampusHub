@@ -8,6 +8,7 @@
     "setup": "node scripts/setup.js",
     "start": "node src/index.js",
     "generate": "prisma generate --schema=prisma/schema.prisma",
+    "generate:postgres": "prisma generate --schema=prisma/schema.prisma",
     "generate:local": "prisma generate --schema=prisma/schema.sqlite.prisma",
     "db:push:local": "prisma db push --schema=prisma/schema.sqlite.prisma",
     "db:push:postgres": "prisma db push --schema=prisma/schema.prisma",

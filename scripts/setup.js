@@ -84,7 +84,7 @@ try {
   if (!fs.existsSync(path.join(frontend, 'node_modules', 'vite'))) {
     runNpm(['--prefix', 'frontend', 'install'], 'Install frontend dependencies');
   }
-  runNpm(['run', 'generate'], 'Generate Prisma client');
+  runNpm(['run', 'generate:local'], 'Generate SQLite Prisma client');
   runNpm(['run', 'db:push:local'], 'Create/update local SQLite database');
   runNpm(['run', 'seed'], 'Seed administrator and shared resources');
   console.log('\nSetup complete.');
