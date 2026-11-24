@@ -1,10 +1,16 @@
 const { PrismaClient } = require('@prisma/client');
 
-const prisma = new PrismaClient();
+// Single Prisma client -- Render uses prisma/schema.prisma (PostgreSQL).
+// Locally, DATABASE_URL=file:./dev.db and the client is generated from schema.sqlite.prisma.
+const prisma = new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['error', 'warn'] : ['error'],
+});
 
-if (process.env.DATABASE_URL?.startsWith('file:')) {
+// SQLite compat: Json fields are stored as plain text strings, so we
+// encode/decode them transparently via a middleware shim.
+if (process.env.DATABASE_URL && process.env.DATABASE_URL.startsWith('file:')) {
   prisma.$use(async (params, next) => {
-    if (params.model === 'Notification' && params.args?.data) {
+    if (params.model === 'Notification' && params.args && params.args.data) {
       const encodePayload = (value) => {
         if (Array.isArray(value)) {
           value.forEach(encodePayload);
@@ -26,7 +32,11 @@ if (process.env.DATABASE_URL?.startsWith('file:')) {
 
     const decodePayload = (notification) => {
       if (notification && typeof notification.payload === 'string') {
-        notification.payload = JSON.parse(notification.payload);
+        try {
+          notification.payload = JSON.parse(notification.payload);
+        } catch (e) {
+          // already an object or malformed -- leave as-is
+        }
       }
       return notification;
     };

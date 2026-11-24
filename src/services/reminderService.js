@@ -9,7 +9,13 @@ async function sendUpcomingReminders() {
   const tickets = await prisma.ticket.findMany({
     where: {
       scannedAt: null,
-      event: { status: 'APPROVED', isDraft: false, startDate: { gt: now, lte: until } },
+      event: {
+        AND: [
+          { status: 'APPROVED' },
+          { isDraft: false },
+          { startDate: { gt: now, lte: until } },
+        ],
+      },
     },
     include: {
       user: { select: { id: true, email: true } },

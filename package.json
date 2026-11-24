@@ -2,22 +2,18 @@
   "name": "campushub-backend",
   "version": "1.0.0",
   "main": "src/index.js",
-  "prisma": {
-    "schema": "prisma/schema.sqlite.prisma"
-  },
   "scripts": {
     "dev": "nodemon src/index.js",
     "dev:all": "node scripts/dev.js",
     "setup": "node scripts/setup.js",
     "start": "node src/index.js",
-    "prisma": "prisma",
-    "migrate": "prisma migrate dev",
-    "generate": "prisma generate",
-    "generate:local": "prisma generate",
-    "db:push:local": "prisma db push",
-    "generate:postgres": "prisma generate --schema=prisma/schema.prisma",
+    "generate": "prisma generate --schema=prisma/schema.prisma",
+    "generate:local": "prisma generate --schema=prisma/schema.sqlite.prisma",
+    "db:push:local": "prisma db push --schema=prisma/schema.sqlite.prisma",
+    "db:push:postgres": "prisma db push --schema=prisma/schema.prisma",
     "migrate:postgres": "prisma migrate dev --schema=prisma/schema.prisma",
-    "seed": "node prisma/seed.js"
+    "seed": "node prisma/seed.js",
+    "postinstall": "prisma generate --schema=prisma/schema.prisma"
   },
   "dependencies": {
     "express": "^4.18.2",
