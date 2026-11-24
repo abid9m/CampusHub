@@ -90,6 +90,16 @@ export function AuthProvider({ children }) {
     return result.user;
   }
 
+  async function updateProfile(values) {
+    const result = await api('/auth/me', { method: 'PATCH', body: values });
+    if (!result?.user || !roleHome[result.user.role]) {
+      throw new Error('The server returned an invalid user profile');
+    }
+    localStorage.setItem(USER_KEY, JSON.stringify(result.user));
+    setUser(result.user);
+    return result.user;
+  }
+
   function logout() {
     clearStoredSession();
     setUser(null);
@@ -101,6 +111,7 @@ export function AuthProvider({ children }) {
     isLoading,
     login: (values) => authenticate('/auth/login', values),
     register: (values) => authenticate('/auth/register', values),
+    updateProfile,
     logout,
   }), [user, isLoading]);
 

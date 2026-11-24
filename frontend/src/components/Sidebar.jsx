@@ -2,10 +2,10 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 const roleLinks = {
-  ADMIN: [['/', 'Discover feed'], ['/dashboard/admin', 'Admin workspace'], ['/resources', 'Resource hub'], ['/check-in', 'Gate check-in'], ['/clubs', 'Club directory']],
-  FACULTY_ADVISOR: [['/', 'Discover feed'], ['/dashboard/advisor', 'Review cockpit'], ['/resources', 'Resource hub'], ['/check-in', 'Gate check-in'], ['/clubs', 'Club directory']],
-  CLUB_EXECUTIVE: [['/', 'Discover feed'], ['/dashboard/executive', 'Club workspace'], ['/resources', 'Resource hub'], ['/check-in', 'Gate check-in'], ['/clubs', 'Club directory']],
-  STUDENT: [['/', 'Discover feed'], ['/dashboard/student', 'My CampusHub'], ['/resources', 'Resource hub'], ['/calendar', 'Event calendar'], ['/clubs', 'Join a club']],
+  ADMIN: [['/', 'Discover feed'], ['/dashboard/admin', 'Admin workspace'], ['/resources', 'Resource hub'], ['/check-in', 'Gate check-in'], ['/clubs', 'Club directory'], ['/settings', 'Account settings']],
+  FACULTY_ADVISOR: [['/', 'Discover feed'], ['/dashboard/advisor', 'Review cockpit'], ['/resources', 'Resource hub'], ['/check-in', 'Gate check-in'], ['/clubs', 'Club directory'], ['/settings', 'Account settings']],
+  CLUB_EXECUTIVE: [['/', 'Discover feed'], ['/dashboard/executive', 'Club workspace'], ['/resources', 'Resource hub'], ['/check-in', 'Gate check-in'], ['/clubs', 'Club directory'], ['/settings', 'Account settings']],
+  STUDENT: [['/', 'Discover feed'], ['/dashboard/student', 'My CampusHub'], ['/resources', 'Resource hub'], ['/calendar', 'Event calendar'], ['/clubs', 'Join a club'], ['/settings', 'Account settings']],
 };
 
 export default function Sidebar() {

@@ -81,9 +81,11 @@ export default function Navbar() {
           {user ? <>
             <NotificationBell />
             <div className="hidden items-center gap-2 border-l border-zinc-200 pl-3 sm:flex">
-              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700">{user.name?.slice(0, 1).toUpperCase()}</span>
+              <Link to="/settings" aria-label="Account settings" title="Account settings" className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-xs font-bold text-indigo-700 transition hover:bg-indigo-200">{user.name?.slice(0, 1).toUpperCase()}</Link>
+              <Link to="/settings" className="rounded-lg px-2 py-2 text-sm font-medium text-zinc-600 transition hover:bg-white hover:text-zinc-950">Settings</Link>
               <button onClick={signOut} className="rounded-lg px-2 py-2 text-sm font-medium text-zinc-600 transition hover:bg-white hover:text-zinc-950">Sign out</button>
             </div>
+            <Link to="/settings" className="rounded-lg px-2 py-2 text-sm font-medium text-zinc-600 sm:hidden">Settings</Link>
             <button onClick={signOut} className="rounded-lg px-2 py-2 text-sm font-medium text-zinc-600 sm:hidden">Exit</button>
           </> : <Link to="/login" className="btn-primary !rounded-lg !px-3.5 !py-2">Sign in <span aria-hidden="true">→</span></Link>}
         </nav>

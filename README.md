@@ -2,6 +2,8 @@
 
 CampusHub is a React/Vite campus-club and event platform backed by Express, Prisma, and PostgreSQL in production. Local development uses SQLite by default.
 
+For the architecture map, feature inventory, API overview, and hosting checklist, see [PROJECT_HANDOFF.md](./PROJECT_HANDOFF.md).
+
 ## Requirements
 
 - Node.js 20.19+ (or 22.12+)
@@ -39,6 +41,7 @@ Use separate browser profiles, or sign out between test accounts. Public registr
 - Paired event-and-budget proposal creation, venue interval conflict checks, submission and joint advisor approval
 - Public event discovery, registration with QR tickets and authorized check-in
 - Central resource inventory, personal reservation tracking and overlap-safe bookings
+- Account information and password settings protected by current-password verification
 - Club-to-club co-host invitations with accept/decline workflow
 - Budget proposals, itemized lines, advisor decisions and expense receipt records
 - Attendance-verified PDF certificates with public verification endpoints

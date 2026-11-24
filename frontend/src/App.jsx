@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import DiscoverFeed from './components/DiscoverFeed';
 import ResourceManagement from './components/ResourceManagement';
+import SettingsPage from './components/SettingsPage';
 import { getRoleHome, useAuth } from './context/AuthContext';
 import { api, API_URL } from './lib/api';
 
@@ -638,6 +639,7 @@ function AuthenticatedApp() {
           <Route path="/calendar" element={<EventFeed calendar />} />
           <Route path="/clubs" element={<ClubDirectory />} />
           <Route path="/resources" element={<ResourceManagement />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><DashboardRedirect /></ProtectedRoute>} />
           <Route path="/dashboard/admin" element={<ProtectedRoute roles={['ADMIN']}><Dashboard /></ProtectedRoute>} />
           <Route path="/dashboard/advisor" element={<ProtectedRoute roles={['FACULTY_ADVISOR']}><Dashboard /></ProtectedRoute>} />
