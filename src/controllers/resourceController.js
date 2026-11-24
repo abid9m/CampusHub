@@ -27,6 +27,18 @@ const listResourceBookings = asyncHandler(async (req, res) => {
   res.json(bookings);
 });
 
+const listMyResourceBookings = asyncHandler(async (req, res) => {
+  const bookings = await prisma.resourceBooking.findMany({
+    where: { userId: req.user.id },
+    include: {
+      resource: { select: { id: true, name: true, type: true } },
+      event: { select: { id: true, title: true } },
+    },
+    orderBy: { start: 'desc' },
+  });
+  res.json(bookings);
+});
+
 const createResource = asyncHandler(async (req, res) => {
   const { name, type, description } = req.body;
   if (typeof name !== 'string' || !name.trim() || typeof type !== 'string' || !type.trim()) {
@@ -45,6 +57,7 @@ const bookResource = asyncHandler(async (req, res) => {
   if (!Number.isFinite(start.getTime()) || !Number.isFinite(end.getTime()) || start >= end) {
     throw new HttpError(400, 'Invalid time range');
   }
+  if (start <= new Date()) throw new HttpError(400, 'Reservation start must be in the future');
   const eventId = req.body.eventId ? parseId(req.body.eventId, 'eventId') : null;
   const booking = await prisma.$transaction(async (tx) => {
     if (process.env.DATABASE_URL?.startsWith('postgres')) {
@@ -84,4 +97,4 @@ const cancelBooking = asyncHandler(async (req, res) => {
   res.status(204).end();
 });
 
-module.exports = { listResources, listResourceBookings, createResource, bookResource, cancelBooking };
+module.exports = { listResources, listResourceBookings, listMyResourceBookings, createResource, bookResource, cancelBooking };

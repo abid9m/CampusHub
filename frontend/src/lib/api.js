@@ -13,7 +13,14 @@ export async function api(path, options = {}) {
   });
   if (response.status === 204) return null;
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.message || `Request failed (${response.status})`);
+  if (!response.ok) {
+    if (response.status === 401 && token) {
+      window.dispatchEvent(new CustomEvent('campushub:unauthorized', { detail: { token } }));
+    }
+    const error = new Error(data.message || `Request failed (${response.status})`);
+    error.status = response.status;
+    throw error;
+  }
   return data;
 }
 

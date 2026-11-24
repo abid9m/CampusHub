@@ -8,7 +8,11 @@ const getPendingEvents = asyncHandler(async (req, res) => {
   const events = await prisma.event.findMany({
     where,
     orderBy: { createdAt: 'asc' },
-    include: { club: { select: { id: true, name: true, advisorId: true } }, creator: { select: { name: true } } },
+    include: {
+      club: { select: { id: true, name: true, advisorId: true } },
+      creator: { select: { name: true } },
+      budgetProposals: { include: { items: true } },
+    },
   });
   res.json(events);
 });
@@ -24,6 +28,13 @@ const updateEventStatus = asyncHandler(async (req, res) => {
   await ensureAdvisor(req.user, current.clubId);
 
   const event = await prisma.$transaction(async (tx) => {
+    const budgetProposal = await tx.budgetProposal.findUnique({
+      where: { eventId: id },
+      include: { club: { select: { leadId: true } } },
+    });
+    if (!budgetProposal || budgetProposal.status !== 'PENDING') {
+      throw new HttpError(409, 'A pending linked budget proposal is required to review this event');
+    }
     if (status === 'APPROVED' && current.venue) {
       if (process.env.DATABASE_URL?.startsWith('postgres')) {
         await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${`venue:${current.venueKey}`}))`;
@@ -46,17 +57,42 @@ const updateEventStatus = asyncHandler(async (req, res) => {
       data: { status, advisorNotes: feedback?.trim() || null },
     });
     if (!updated.count) throw new HttpError(409, 'Event has already been reviewed');
-    return tx.event.findUnique({
-      where: { id },
-      include: { club: true, creator: { select: { id: true, email: true, name: true } } },
+    const updatedBudget = await tx.budgetProposal.updateMany({
+      where: { id: budgetProposal.id, status: 'PENDING' },
+      data: { status },
     });
-  });
-  await prisma.notification.create({
-    data: {
-      userId: event.creator.id,
-      type: 'EVENT_STATUS',
-      payload: { eventId: event.id, title: event.title, status, feedback: event.advisorNotes },
-    },
+    if (!updatedBudget.count) throw new HttpError(409, 'The linked budget proposal has already been reviewed');
+    await tx.budgetApproval.create({
+      data: {
+        proposalId: budgetProposal.id,
+        advisorId: req.user.id,
+        decision: status,
+        notes: feedback?.trim() || null,
+      },
+    });
+    await tx.notification.create({
+      data: {
+        userId: budgetProposal.club.leadId,
+        type: 'BUDGET_UPDATE',
+        payload: { proposalId: budgetProposal.id, eventId: id, decision: status, title: budgetProposal.title },
+      },
+    });
+    const updatedEvent = await tx.event.findUnique({
+      where: { id },
+      include: {
+        club: true,
+        creator: { select: { id: true, email: true, name: true } },
+        budgetProposals: { include: { items: true } },
+      },
+    });
+    await tx.notification.create({
+      data: {
+        userId: updatedEvent.creator.id,
+        type: 'EVENT_STATUS',
+        payload: { eventId: updatedEvent.id, title: updatedEvent.title, status, feedback: updatedEvent.advisorNotes },
+      },
+    });
+    return updatedEvent;
   });
   res.json(event);
 });

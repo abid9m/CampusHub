@@ -1,43 +1,27 @@
 const prisma = require('../config/db');
 const { asyncHandler, HttpError, parseId } = require('../utils/http');
 const { ensureAdvisor, ensureClubManager } = require('../services/authorization');
+const { normalizeBudgetProposal, proposalCreateData } = require('../services/budgetProposal');
 
 const createProposal = asyncHandler(async (req, res) => {
-  const { title, amount, description, clubId, eventId, items } = req.body;
+  const { clubId, eventId } = req.body;
   const parsedClubId = parseId(clubId, 'clubId');
-  const total = Number(amount);
-  if (typeof title !== 'string' || !title.trim() || !Number.isFinite(total) || total <= 0) {
-    throw new HttpError(400, 'A proposal title and positive amount are required');
-  }
+  if (!eventId) throw new HttpError(400, 'A budget proposal must be linked to an event');
+  const parsedEventId = parseId(eventId, 'eventId');
+  const normalizedProposal = normalizeBudgetProposal(req.body);
   await ensureClubManager(req.user, parsedClubId);
-  if (eventId) {
-    const linkedEvent = await prisma.event.findUnique({ where: { id: parseId(eventId, 'eventId') }, select: { clubId: true } });
-    if (!linkedEvent || linkedEvent.clubId !== parsedClubId) throw new HttpError(400, 'The event must belong to the selected club');
+  const event = await prisma.event.findUnique({
+    where: { id: parsedEventId },
+    select: { clubId: true, isDraft: true },
+  });
+  if (!event || event.clubId !== parsedClubId || !event.isDraft) {
+    throw new HttpError(400, 'The budget must be linked to a draft event in the selected club');
   }
-  if (!Array.isArray(items) || items.length === 0 || items.some((item) =>
-    typeof item.description !== 'string' || !item.description.trim() ||
-    !Number.isFinite(Number(item.amount)) || Number(item.amount) <= 0
-  )) {
-    throw new HttpError(400, 'At least one budget line item with a description and positive amount is required');
-  }
-  if (items?.length) {
-    const itemTotal = items.reduce((sum, item) => sum + Number(item.amount), 0);
-    if (Math.abs(itemTotal - total) > 0.01) throw new HttpError(400, 'Line item total must match the proposal amount');
+  if (await prisma.budgetProposal.findUnique({ where: { eventId: parsedEventId } })) {
+    throw new HttpError(409, 'This event already has a linked budget proposal');
   }
   const proposal = await prisma.budgetProposal.create({
-    data: {
-      clubId: parsedClubId,
-      eventId: eventId ? Number(eventId) : null,
-      title: title.trim(),
-      amount: total,
-      description: description || null,
-      items: {
-        create: (items || []).map((item) => ({
-          description: item.description.trim(),
-          amount: Number(item.amount),
-        })),
-      },
-    },
+    data: proposalCreateData({ clubId: parsedClubId, eventId: parsedEventId, proposal: normalizedProposal }),
     include: { items: true },
   });
   res.status(201).json(proposal);
@@ -53,6 +37,9 @@ const reviewProposal = asyncHandler(async (req, res) => {
   });
   if (!proposal) throw new HttpError(404, 'Budget proposal not found');
   await ensureAdvisor(req.user, proposal.clubId);
+  if (proposal.eventId) {
+    throw new HttpError(409, 'Review this proposal together with its linked event from the approval cockpit');
+  }
   if (proposal.status !== 'PENDING') throw new HttpError(409, 'Proposal has already been reviewed');
   const result = await prisma.$transaction(async (tx) => {
     const updated = await tx.budgetProposal.updateMany({

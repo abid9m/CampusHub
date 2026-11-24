@@ -26,6 +26,7 @@ model User {
   feedback             Feedback[]
   notifications        Notification[]
   applicationsReviewed MembershipApplication[] @relation("ApplicationReviewer")
+  clubPosts            ClubPost[]               @relation("ClubPostAuthor")
 }
 
 model Club {
@@ -41,6 +42,7 @@ model Club {
   invitations     CoHostInvitation[]
   budgetProposals BudgetProposal[]
   applications    MembershipApplication[]
+  posts           ClubPost[]
   createdAt       DateTime                @default(now())
   updatedAt       DateTime                @updatedAt
 }
@@ -78,6 +80,7 @@ model Event {
   resourceBookings  ResourceBooking[]
   cohostInvitations CoHostInvitation[]
   budgetProposals   BudgetProposal[]
+  posts             ClubPost[]
   feedback          Feedback[]
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
@@ -110,6 +113,24 @@ model ResourceBooking {
 
   @@index([resourceId, start, end])
   @@index([userId])
+}
+
+model ClubPost {
+  id        Int      @id @default(autoincrement())
+  clubId    Int
+  club      Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  authorId  Int
+  author    User     @relation("ClubPostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  eventId   Int?
+  event     Event?   @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  type      String   @default("POST")
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([clubId, createdAt])
+  @@index([eventId])
 }
 
 model CoHostInvitation {
@@ -160,7 +181,7 @@ model BudgetProposal {
   id          Int              @id @default(autoincrement())
   clubId      Int
   club        Club             @relation(fields: [clubId], references: [id], onDelete: Cascade)
-  eventId     Int?
+  eventId     Int?             @unique
   event       Event?           @relation(fields: [eventId], references: [id], onDelete: SetNull)
   title       String
   amount      Float
