@@ -1,4 +1,5 @@
 # CampusHub
+<<<<<<< HEAD
 
 CampusHub is a React/Vite campus-club and event platform backed by Express, Prisma and a local SQLite database by default. This workspace includes role-aware APIs and dashboards for students, club executives, faculty advisors and administrators.
 
@@ -54,3 +55,6 @@ Use separate browser profiles, or sign out between test accounts. Public registr
 - SMTP email is enabled when `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER` and `SMTP_PASSWORD` are configured. Without SMTP, email delivery is reported as unavailable; in-app notifications continue to work.
 - Certificate PDFs are stored in `storage/certificates`. Use persistent, access-controlled storage and backups for deployed environments.
 - The reminder worker runs in each API process. For horizontally scaled deployments, disable it with `DISABLE_REMINDER_WORKER=true` and run a single dedicated worker process.
+=======
+CampusHub is a centralized web-based platform designed to simplify university-wide club and event management. It provides a unified environment for managing clubs, organizing events, detecting scheduling conflicts, sharing resources, coordinating joint events, and handling student registrations.
+>>>>>>> ff623bf9af3d5a98bd437002ec598aeee291ecfc
