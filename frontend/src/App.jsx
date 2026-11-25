@@ -176,6 +176,7 @@ function StudentTickets() {
 
 function EventProposalForm({ clubs, onCreated }) {
   const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
   const [loading, setLoading] = useState(false);
   async function submit(event) {
     event.preventDefault();
@@ -190,7 +191,7 @@ function EventProposalForm({ clubs, onCreated }) {
       setError('Add at least one budget item with a positive amount.');
       return;
     }
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setNotice('');
     try {
       await api('/events/proposals', {
         method: 'POST',
@@ -212,12 +213,13 @@ function EventProposalForm({ clubs, onCreated }) {
         },
       });
       form.reset();
+      setNotice('Event and budget proposal submitted for advisor review.');
       onCreated();
     } catch (err) { setError(err.message); }
     finally { setLoading(false); }
   }
   return <form className="card" onSubmit={submit}>
-    <div className="mb-5"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-600">One complete submission</p><h2 className="mt-1 text-lg font-semibold tracking-tight text-zinc-900">Event & budget proposal</h2><p className="mt-1 text-sm leading-5 text-zinc-500">Submit event details and an itemized budget together for advisor review.</p></div><Alert message={error} />
+    <div className="mb-5"><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-600">One complete submission</p><h2 className="mt-1 text-lg font-semibold tracking-tight text-zinc-900">Event & budget proposal</h2><p className="mt-1 text-sm leading-5 text-zinc-500">Submit event details and an itemized budget together for advisor review.</p></div><Alert message={error} /><Alert message={notice} type="success" />
     <label className="label">Club<select name="clubId" className="field mt-1" required defaultValue=""><option value="" disabled>Select a club</option>{clubs.map((club) => <option value={club.id} key={club.id}>{club.name}</option>)}</select></label>
     <label className="label mt-3">Event title<input name="eventTitle" className="field mt-1" required /></label>
     <label className="label mt-3">Event description<textarea name="eventDescription" rows="3" className="field mt-1" /></label>
@@ -442,7 +444,7 @@ function AdminWorkspace() {
         },
       });
       form.reset();
-      setNotice('Club created. The selected executive can now draft events.');
+      setNotice('Club created. The selected lead can now create event proposals.');
       await load();
     } catch (err) { setError(err.message); }
   }
@@ -460,7 +462,7 @@ function AdminWorkspace() {
     } catch (err) { setError(err.message); }
   }
 
-  const executives = users.filter((item) => item.role === 'CLUB_EXECUTIVE' || roles[item.id] === 'CLUB_EXECUTIVE');
+  const clubLeads = users.filter((item) => ['ADMIN', 'CLUB_EXECUTIVE'].includes(item.role));
   const advisors = users.filter((item) => item.role === 'FACULTY_ADVISOR' || roles[item.id] === 'FACULTY_ADVISOR');
   return <>
     <PageTitle eyebrow="Administrator workspace" title="Set up your campus" description="Create user roles, assign club leadership and advisors, and manage shared resources." />
@@ -469,6 +471,9 @@ function AdminWorkspace() {
     <div className="mb-6 grid gap-3 sm:grid-cols-3">
       {[['Accounts', users.length, 'People across your campus'], ['Clubs', clubs.length, 'Student communities'], ['Resources', resources.length, 'Bookable resources']].map(([label, count, detail], index) => <div className="card group !p-5" key={label}><div className="flex items-start justify-between"><div><p className="text-sm font-medium text-zinc-600">{label}</p><p className="mt-2 text-3xl font-bold tracking-tight text-zinc-950">{count}</p></div><span className={`flex h-10 w-10 items-center justify-center rounded-xl ${index === 0 ? 'bg-indigo-50 text-indigo-600' : index === 1 ? 'bg-violet-50 text-violet-600' : 'bg-emerald-50 text-emerald-600'}`}><svg aria-hidden="true" viewBox="0 0 24 24" fill="none" className="h-5 w-5" stroke="currentColor" strokeWidth="1.7"><path d={index === 0 ? 'M16 20h5v-1a4 4 0 0 0-5.5-3.7M16 20H8m8 0v-1c0-1.1-.4-2.1-1.1-2.8M8 20H3v-1a4 4 0 0 1 5.5-3.7M8 20v-1c0-1.1.4-2.1 1.1-2.8m0 0a5 5 0 0 1 5.8 0M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm5 3a2 2 0 1 1-4 0 2 2 0 0 1 4 0ZM8 10a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z' : index === 1 ? 'M3 10.5 12 4l9 6.5M5 9v11h14V9M9 20v-6h6v6' : 'M5 4h14v16H5zM8 8h8m-8 4h8m-8 4h4'} strokeLinecap="round" strokeLinejoin="round"/></svg></span></div><p className="mt-2 text-xs text-zinc-500">{detail}</p></div>)}
     </div>
+    <section className="mb-6">
+      <EventProposalForm clubs={clubs} onCreated={load} />
+    </section>
     <div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
       <section className="card">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -496,10 +501,10 @@ function AdminWorkspace() {
           <h2 className="mb-4 font-bold text-ink">Create a club</h2>
           <label className="label">Club name<input className="field mt-1" name="name" required /></label>
           <label className="label mt-3">Description<textarea className="field mt-1" name="description" rows="2" /></label>
-          <label className="label mt-3">Club executive lead<select className="field mt-1" name="leadId" defaultValue="" required><option value="" disabled>Assign an executive</option>{executives.map((item) => <option value={item.id} key={item.id}>{item.name} · {item.email}</option>)}</select></label>
+          <label className="label mt-3">Club lead<select className="field mt-1" name="leadId" defaultValue="" required><option value="" disabled>Assign an administrator or executive</option>{clubLeads.map((item) => <option value={item.id} key={item.id}>{item.name} · {item.role === 'ADMIN' ? 'Administrator' : 'Club executive'} · {item.email}</option>)}</select></label>
           <label className="label mt-3">Faculty advisor<select className="field mt-1" name="advisorId" defaultValue=""><option value="">Not assigned yet</option>{advisors.map((item) => <option value={item.id} key={item.id}>{item.name}</option>)}</select></label>
-          <button className="btn-primary mt-4" disabled={!executives.length}>Create club</button>
-          {!executives.length && <p className="mt-2 text-xs text-amber-700">First assign a registered account the CLUB_EXECUTIVE role.</p>}
+          <button className="btn-primary mt-4" disabled={!clubLeads.length}>Create club</button>
+          {!clubLeads.length && <p className="mt-2 text-xs text-amber-700">Create an administrator or assign a registered account the CLUB_EXECUTIVE role first.</p>}
         </form>
         <form className="card" onSubmit={createResource}>
           <h2 className="mb-4 font-bold text-ink">Add shared resource</h2>
